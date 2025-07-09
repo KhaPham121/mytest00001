@@ -1,0 +1,92 @@
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\System.Data.SQLite.dll 
+[ERROR] System.Data.SQLite.dll not found. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\System.Data.SQLite.dll 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\System.Data.SQLite.dll 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\System.Data.SQLite.dll 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\System.Data.SQLite.dll 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite DLL at  
+[ERROR] System.Data.SQLite.dll not found. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
+Checking PowerShell environment... 
+PowerShell ready 
+Checking SQLite3 at C:\Users\Kha\Desktop\ClipStudioPaint_DataManager-main\SourceCode\\module\sqlite3.exe 
+System.Data.SQLite.dll ready 
+Checking 7-Zip module exist 
+Checking hash Module... 
+Hash verified. 
