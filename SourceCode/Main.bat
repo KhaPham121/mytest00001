@@ -344,6 +344,7 @@ del /f /q "!BackupPointFile!"
 findstr /c:"Status4: 1" "%temp%\backup_check\backup.point" >nul
 if errorlevel 1 (
 echo Detected need rebuild material database.
+echo [INFO] Detected need rebuild material database  >> "%logfile%"
 powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Restore successfully. But to ensure the material works stably, please use ClipStudio to rebuild the material database','ClipStudio Paint Data Manager')"
 )
 if exist "%temp%\backup_check" (
@@ -422,17 +423,18 @@ goto check_userdata_exist_for_restore
 :merge_material_data
 call :check_program_running
 if not "!MaterialPath!"=="!MaterialPathDefault!" (
-echo Detected material path is not default >> "%logfile%"
+echo [INFO] Detected material path is not default >> "%logfile%"
 echo Detected material path is not default. Script merging and updating data...
 echo Keep this window running. DO NOT CLOSE this window.
 if not exist "!MaterialPathDefault!" (
 mkdir "!MaterialPathDefault!"
 )
-echo Temporary update to database done for data merge >> "%logfile%"
+echo [ACTION] Temporary update to database done for data merge >> "%logfile%"
 if exist "!ConfigDBPath!" (
 copy "!ConfigDBPath!" "!ConfigDBPathLocation!\ConfigBackup.sqlite" >nul
 ) else (
 echo [WARN] File config.sqlite not exist.
+echo [WARN] File config.sqlite not exist  >> "%logfile%"
 )
 xcopy "!MaterialPath!\*" "!MaterialPathDefaultDB!" /E /H /C /Y >nul
 "!SQLiteEXE!" "!ConfigDBPath!" "UPDATE CategoryFolderPath SET DataFolderPath = NULL, OldDataFolderPath = NULL;"
@@ -442,13 +444,14 @@ goto :eof
 
 
 :recover_old_database
-echo Restore original database after merge. >> "%logfile%"
+echo [ACTION] Restore original database after merge. >> "%logfile%"
 del "!ConfigDBPath!" >nul
 ren "!ConfigDBPathLocation!\ConfigBackup.sqlite" "Config.sqlite"
 goto :eof
 
 
 :reset_value
+echo Reset value >> "%logfile%"
 set "SelectedBak="
 set "SaveFile="
 set "MaterialPath="
