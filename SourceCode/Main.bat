@@ -20,7 +20,6 @@ set "logfile=!source!\log.txt"
 set "ZipEXE=!source!module\7z.exe"
 set "ZipDll=!source!module\7z.dll"
 set "BackupPointFile=%appdata%\backup.point"
-set "MaterialPathDefault=!CSPUserData1!\CELSYS\CLIPStudioCommon\Material"
 set "CSPUserData1=%appdata%\CELSYSUserData"
 set "CSPUserData2=%appdata%\CELSYS"
 for /d %%G in ("%appdata%\CELSYS_*") do (
@@ -29,8 +28,11 @@ set "CSPUserData3=%%G"
 )
 )
 set "ConfigDBPath=!CSPUserData1!\CELSYS\CLIPStudioCommon\Preference\config.sqlite"
+set "ConfigDBPathLocation=!CSPUserData1!\CELSYS\CLIPStudioCommon\Preference"
 set "SQLiteEXE=!source!\module\sqlite3.exe"
 set "SQLiteDLL=!source!\module\sqlite3.dll"
+set "MaterialPathDefault=!CSPUserData1!\CELSYS\CLIPStudioCommon\Material"
+set "MaterialPathDefaultDB=!CSPUserData1!\CELSYS\CLIPStudioCommon"
 cls
 mode con: cols=75 lines=25
 goto check_module
@@ -133,13 +135,13 @@ exit
 
 :check_material_location
 for /f "delims=" %%i in ('""!SQLiteEXE!" "!ConfigDBPath!" "SELECT DataFolderPath FROM CategoryFolderPath LIMIT 1;""') do (
-    set "MaterialPath=%%i\Material"
+set "MaterialPath=%%i"
 )
-
 if not defined MaterialPath (
-    set "MaterialPath=!MaterialPathDefault!"
+set "MaterialPath=!MaterialPathDefault!"
 )
 goto :eof
+
 
 :check_program_running
 set "flag=0"
@@ -159,10 +161,9 @@ goto check_program_running
 goto :eof
 
 :manage_userdata
-cls
-set "SelectedBak="
-set "SaveFile="
+call :reset_value
 call :check_material_location
+cls
 echo ======================================================================
 echo     		  ClipStudio Paint Data Manager
 echo ======================================================================
@@ -176,11 +177,9 @@ echo.
 echo		[0]. Open log
 echo.
 echo ======================================================================
-echo Material path is: !MaterialPath!
 echo.
 echo Press number key to select your choice
-choice /c 123450T /n
-if errorlevel 7 goto test_compress
+choice /c 123450 /n
 if errorlevel 6 goto open_log
 if errorlevel 5 goto open_license
 if errorlevel 4 goto gethelp
@@ -212,8 +211,6 @@ pause >nul
 cls
 goto manage_userdata
 
-
-::=================================================================================================
 :select_file_contain_backup
 cls
 echo Select file contain backup
@@ -256,12 +253,22 @@ echo Status3: OK >> "!BackupPointFile!"
 echo Checking "!CSPUserData3!" >> "!BackupPointFile!"
 echo Status3: NOTFOUND >> "!BackupPointFile!"
 )
+if not "!MaterialPath!"=="!MaterialPathDefault!" (
+echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
+echo Status4: 0 >> "!BackupPointFile!"
+) else (
+echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
+echo Status4: 1 >> "!BackupPointFile!"
+)
 echo Backing up...
 echo Do not close this window...
 echo [ACTION] Start backup >> "%logfile%"
 start /wait /b "" "!ZipEXE!" a "!SaveFile!" "!CSPUserData1!" "!CSPUserData2!" "!CSPUserData3!" "!BackupPointFile!"
 if exist "!BackupPointFile!" (
 del /f /q "!BackupPointFile!"
+)
+if exist "!ConfigDBPathLocation!\ConfigBackup.sqlite" (
+call :recover_old_database
 )
 goto :eof
 
@@ -290,7 +297,7 @@ goto manage_userdata
 if exist "!SaveFile!" (
 echo Backup completed successfully.
 echo [INFO] Backup completed. >> "%logfile%"
-echo Your backup location is: "!SaveFile!"
+echo Your backup location is: !SaveFile!
 powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Backup completed','ClipStudio Paint Data Manager')"
 goto manage_userdata
 ) else (
@@ -332,6 +339,15 @@ echo Do not close this window...
 start /wait /b "" "!ZipEXE!" x "%DesExtr%" -o"%outdir%" -y
 if exist "!BackupPointFile!" (
 del /f /q "!BackupPointFile!"
+)
+"%ZipEXE%" e "!SelectedBak!" "backup.point" -o"%temp%\backup_check" -y -bd >nul
+findstr /c:"Status4: 1" "%temp%\backup_check\backup.point" >nul
+if errorlevel 1 (
+echo Detected need rebuild material database.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Restore successfully. But to ensure the material works stably, please use ClipStudio to rebuild the material database','ClipStudio Paint Data Manager')"
+)
+if exist "%temp%\backup_check" (
+rmdir /S /Q "%temp%\backup_check" >nul
 )
 echo Restore completed.
 echo [INFO] Restore completed >> "%logfile%"
@@ -403,17 +419,37 @@ rmdir /S /Q "%temp%\backup_check" >> "%logfile%"
 goto check_userdata_exist_for_restore
 )
 
-
-=====================================
-:test_compress
-"%ZipEXE%" a "%temp%\CSPTemp\Material.bak" "!MaterialPath!\*"
-
-=====================================
 :merge_material_data
+call :check_program_running
 if not "!MaterialPath!"=="!MaterialPathDefault!" (
 echo Detected material path is not default >> "%logfile%"
 echo Detected material path is not default. Script merging and updating data...
-xcopy "!MaterialPath!" "!MaterialPathDefault!" /E /H /C /Y
-"!SQLiteEXE!" "!ConfigDBPath!" "UPDATE CategoryFolderPath SET DataFolderPath = '!MaterialPath!', OldDataFolderPath = NULL WHERE ID = 1;"
+echo Keep this window running. DO NOT CLOSE this window.
+if not exist "!MaterialPathDefault!" (
+mkdir "!MaterialPathDefault!"
 )
+echo Temporary update to database done for data merge >> "%logfile%"
+if exist "!ConfigDBPath!" (
+copy "!ConfigDBPath!" "!ConfigDBPathLocation!\ConfigBackup.sqlite" >nul
+) else (
+echo [WARN] File config.sqlite not exist.
+)
+xcopy "!MaterialPath!\*" "!MaterialPathDefaultDB!" /E /H /C /Y >nul
+"!SQLiteEXE!" "!ConfigDBPath!" "UPDATE CategoryFolderPath SET DataFolderPath = NULL, OldDataFolderPath = NULL;"
+)
+
+goto :eof
+
+
+:recover_old_database
+echo Restore original database after merge. >> "%logfile%"
+del "!ConfigDBPath!" >nul
+ren "!ConfigDBPathLocation!\ConfigBackup.sqlite" "Config.sqlite"
+goto :eof
+
+
+:reset_value
+set "SelectedBak="
+set "SaveFile="
+set "MaterialPath="
 goto :eof
