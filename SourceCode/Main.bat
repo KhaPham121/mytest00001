@@ -313,8 +313,8 @@ goto manage_userdata
 cls
 if exist "!CSPUserData1!" (
 echo Detected old appdata >> "%logfile%"
-echo Detected old appdata
-echo This action will overwrite your current app data
+echo Detected old appdata.
+echo [WARNING] This action will overwrite your current app data.
 echo Do you want to continue?
 echo.
 echo [Y]= YES				[N]= NO
@@ -364,7 +364,7 @@ timeout /t 1 /nobreak >nul
 echo Found "!CSPUserData1!".
 echo [WARNING] This action CANNOT BE UNDONE. Deleted data CANNOT be recovered.
 echo Make sure you have backed up your data before.
-echo Do you want to delete?
+echo Do you want to continue?
 echo.
 echo [Y] YES			[N] No
 choice /c YN /n
