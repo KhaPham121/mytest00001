@@ -165,7 +165,7 @@ call :reset_value
 call :check_material_location
 cls
 echo ======================================================================
-echo     		  ClipStudio Paint Data Manager
+echo     		  ClipStudio Paint Data Manager v!ScriptVersion!
 echo ======================================================================
 echo.
 echo		[1]. Backup my CLIPStudioPaint UserData
@@ -179,6 +179,7 @@ echo.
 echo ======================================================================
 echo.
 echo Press number key to select your choice
+
 choice /c 123450 /n
 if errorlevel 6 goto open_log
 if errorlevel 5 goto open_license
