@@ -1,7 +1,7 @@
 @echo off
 cls
 setlocal enabledelayedexpansion
-set "ScriptVersion=1.0.0"
+set "ScriptVersion=1.0.1"
 title ClipStudio Paint Data Manager
 goto :check_administrator_privilege
 
@@ -20,6 +20,7 @@ set "logfile=!source!\log.txt"
 set "ZipEXE=!source!module\7z.exe"
 set "ZipDll=!source!module\7z.dll"
 set "BackupPointFile=%appdata%\backup.point"
+set "MaterialPathDefault=!CSPUserData1!\CELSYS\CLIPStudioCommon\Material"
 set "CSPUserData1=%appdata%\CELSYSUserData"
 set "CSPUserData2=%appdata%\CELSYS"
 for /d %%G in ("%appdata%\CELSYS_*") do (
@@ -27,8 +28,9 @@ if /I not "%%~nxG"=="CELSYS" (
 set "CSPUserData3=%%G"
 )
 )
-set "SQLiteDBPath=!CSPUserData1!\CELSYS\CLIPStudioCommon\Preference\config.sqlite"
+set "ConfigDBPath=!CSPUserData1!\CELSYS\CLIPStudioCommon\Preference\config.sqlite"
 set "SQLiteEXE=!source!\module\sqlite3.exe"
+set "SQLiteDLL=!source!\module\sqlite3.dll"
 cls
 mode con: cols=75 lines=25
 goto check_module
@@ -40,65 +42,121 @@ echo Checking PowerShell environment... >> "%logfile%"
 powershell -Command "Write-Output 'PowerShell OK'" >nul 2>&1
 if %errorlevel% neq 0 (
 echo [ERROR] PowerShell not available. >> "%logfile%"
-echo PowerShell PowerShell not available or cannot start. Please check your system.
+echo Windows PowerShell not available or cannot start. Please check your system.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Windows PowerShell not available or cannot start. Please check your system','ClipStudio Paint Data Manager')"
 timeout /t 3 /nobreak >nul
 exit /b
 ) else (
 echo PowerShell ready >> "%logfile%"
 )
-echo Checking SQLite3 at !SQLiteEXE! >> "%logfile%"
+echo Checking SQLite3.exe at !SQLiteEXE! >> "%logfile%"
 if not exist "!SQLiteEXE!" (
-echo [ERROR] SQLite3 not found. >> "%logfile%"
-echo SQLite3 was not found.
+echo [ERROR] SQLite3.exe not found. >> "%logfile%"
+echo SQLite3.exe was not found.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('SQLite3.exe was not found. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
+echo Checking SQLite3.dll at !SQLiteDLL! >> "%logfile%"
+if not exist "!SQLiteDLL!" (
+echo [ERROR] SQLite3.dll not found. >> "%logfile%"
+echo SQLite3.dll was not found.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('SQLite3.dll was not found. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
 timeout /t 3 /nobreak >nul
 exit /b
 ) else (
-echo System.Data.SQLite.dll ready >> "%logfile%"
+echo SQLite3.dll found >> "%logfile%"
+)
+) else (
+echo SQLite3.exe found >> "%logfile%"
+)
+echo Verifying SQLite3 hashes... >> "%logfile%"
+set "SHA256SQLite3EXE=E7E7FF8CFA4D85CA6CA10B9C81924EEF483912566B8A1EEA35EA505FC10B964F"
+set "SHA256SQLite3DLL=44D7C8AAAD2C1E19AE50A6DF2A91CC8AF36D735691EFE0C19041E77F0FEE9A41"
+for /f "delims=" %%i in ('powershell -Command "Get-FileHash -Algorithm SHA256 -Path '!SQLiteEXE!' ^| Select-Object -ExpandProperty Hash"') do (
+set "SQLite3ExeHash=%%i"
+)
+for /f "delims=" %%i in ('powershell -Command "Get-FileHash -Algorithm SHA256 -Path '!SQLiteDLL!' ^| Select-Object -ExpandProperty Hash"') do (
+set "SQLite3DllHash=%%i"
+)
+if /i "!SQLite3ExeHash!"=="!SHA256SQLite3EXE!" (
+if /i "!SQLite3DllHash!"=="!SHA256SQLite3DLL!" (
+echo SQLite3 hash verified successfully. >> "%logfile%"
+) else (
+echo [ERROR] SQLite3.dll hash mismatch. >> "%logfile%"
+echo Hash mismatch for SQLite3.dll.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Hash mismatch for SQLite3.dll. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
+timeout /t 3 /nobreak >nul
+exit /b
+)
+) else (
+echo [ERROR] SQLite3.exe hash mismatch. >> "%logfile%"
+echo Hash mismatch for SQLite3.exe.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Hash mismatch for SQLite3.exe. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
+timeout /t 3 /nobreak >nul
+exit /b
 )
 echo Checking 7-Zip module exist >> "%logfile%"
-timeout /t 1 /nobreak >nul
 if exist "!ZipEXE!" (
 if exist "!ZipDll!" (
 echo Checking hash Module... >> "%logfile%"
-set "SHA256EXE=B200B887BD7CBF83FA4FEEF54797622D04729144DD58428A97982839F3134BA5"
-set "SHA256DLL=AFFFCF0732BF096AEE18D2AB6363DF21F53EBC053412747D64BDB6FF8E56ECF0"
+set "SHA256ZipEXE=B200B887BD7CBF83FA4FEEF54797622D04729144DD58428A97982839F3134BA5"
+set "SHA256ZipDLL=AFFFCF0732BF096AEE18D2AB6363DF21F53EBC053412747D64BDB6FF8E56ECF0"
 for /f "delims=" %%i in ('powershell -Command "Get-FileHash -Algorithm SHA256 -Path '!ZipEXE!' ^| Select-Object -ExpandProperty Hash"') do (
 set "ZipExeHash=%%i"
 )
 for /f "delims=" %%i in ('powershell -Command "Get-FileHash -Algorithm SHA256 -Path '!ZipDll!' ^| Select-Object -ExpandProperty Hash"') do (
 set "ZipDllHash=%%i"
 )
-if /i "!ZipExeHash!"=="!SHA256EXE!" (
-if /i "!ZipDllHash!"=="!SHA256DLL!" (
+if /i "!ZipExeHash!"=="!SHA256ZipEXE!" (
+if /i "!ZipDllHash!"=="!SHA256ZipDLL!" (
 echo Hash verified. >> "%logfile%"
 goto manage_userdata
 )
 )
 echo Hash mismatch. Exiting...
 echo [ERROR] Hash mismatch. >> "%logfile%"
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('7-Zip module hash mismatch. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
 timeout /t 3 /nobreak >nul
 exit
 ) else (
 echo 7z.dll not found. Exiting...
 echo [ERROR] 7z.dll missing >> "%logfile%"
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('7z.dll not found. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
 timeout /t 2 /nobreak >nul
 exit
 )
 ) else (
 echo 7z.exe not found. Exiting...
 echo [ERROR] 7z.exe missing >> "%logfile%"
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('7z.exe not found. Try re-download application or check module manually','ClipStudio Paint Data Manager')"
 timeout /t 2 /nobreak >nul
 exit
 )
 
 :check_material_location
-for /f "delims=" %%i in (
-  '!SQLITEEXE! "!SQLiteDBPath!" "SELECT DataFolderPath FROM CategoryFolderPath LIMIT 1;"'
-) do (
-set "MaterialPath=%%i"
+for /f "delims=" %%i in ('""!SQLiteEXE!" "!ConfigDBPath!" "SELECT DataFolderPath FROM CategoryFolderPath LIMIT 1;""') do (
+    set "MaterialPath=%%i\Material"
+)
+
+if not defined MaterialPath (
+    set "MaterialPath=!MaterialPathDefault!"
 )
 goto :eof
 
+:check_program_running
+set "flag=0"
+tasklist /FI "IMAGENAME eq ClipStudio.exe" | find /I "ClipStudio.exe" >nul
+if not errorlevel 1 (
+set "flag=1"
+)
+tasklist /FI "IMAGENAME eq ClipStudioPaint.exe" | find /I "ClipStudioPaint.exe" >nul
+if not errorlevel 1 (
+set "flag=1"
+)
+if "%flag%"=="1" (
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('ClipStudio Apps is running. Please close the program before proceeding.','ClipStudio Paint Data Manager')"
+cls
+goto check_program_running
+)
+goto :eof
 
 :manage_userdata
 cls
@@ -121,7 +179,8 @@ echo ======================================================================
 echo Material path is: !MaterialPath!
 echo.
 echo Press number key to select your choice
-choice /c 123450 /n
+choice /c 123450T /n
+if errorlevel 7 goto test_compress
 if errorlevel 6 goto open_log
 if errorlevel 5 goto open_license
 if errorlevel 4 goto gethelp
@@ -174,6 +233,8 @@ goto :eof
 
 :start_backup
 cls
+call :check_program_running
+call :merge_material_data
 if exist "!CSPUserData1!\" (
 echo Checking "!CSPUserData1!" >> "!BackupPointFile!"
 echo Status1: OK >> "!BackupPointFile!"
@@ -255,6 +316,7 @@ if errorlevel 1 goto start_restore
 )
 
 :start_restore
+call :check_program_running
 set "DesExtr=!SelectedBak!"
 set "outdir=%appdata%"
 if not exist "!DesExtr!" (
@@ -301,6 +363,7 @@ goto manage_userdata
 
 :wipe_all_userdata
 cls
+call :check_program_running
 timeout /t 1 /nobreak >nul
 echo [INFO] Deleting CELSYSUserData... >> "%logfile%"
 echo Deleting...
@@ -339,3 +402,18 @@ rmdir /S /Q "%temp%\backup_check" >> "%logfile%"
 )
 goto check_userdata_exist_for_restore
 )
+
+
+=====================================
+:test_compress
+"%ZipEXE%" a "%temp%\CSPTemp\Material.bak" "!MaterialPath!\*"
+
+=====================================
+:merge_material_data
+if not "!MaterialPath!"=="!MaterialPathDefault!" (
+echo Detected material path is not default >> "%logfile%"
+echo Detected material path is not default. Script merging and updating data...
+xcopy "!MaterialPath!" "!MaterialPathDefault!" /E /H /C /Y
+"!SQLiteEXE!" "!ConfigDBPath!" "UPDATE CategoryFolderPath SET DataFolderPath = '!MaterialPath!', OldDataFolderPath = NULL WHERE ID = 1;"
+)
+goto :eof
