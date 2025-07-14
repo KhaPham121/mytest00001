@@ -180,7 +180,8 @@ echo ======================================================================
 echo.
 echo Press number key to select your choice
 
-choice /c 123450 /n
+choice /c 123450T /n
+if errorlevel 7 goto backup_selection_menu
 if errorlevel 6 goto open_log
 if errorlevel 5 goto open_license
 if errorlevel 4 goto gethelp
@@ -233,34 +234,7 @@ goto :eof
 cls
 call :check_program_running
 call :merge_material_data
-if exist "!CSPUserData1!\" (
-echo Checking "!CSPUserData1!" >> "!BackupPointFile!"
-echo Status1: OK >> "!BackupPointFile!"
-) else (
-echo Checking "!CSPUserData1!" >> "!BackupPointFile!"
-echo Status1: NOTFOUND >> "!BackupPointFile!"
-)
-if exist "!CSPUserData2!\" (
-echo Checking "!CSPUserData2!" >> "!BackupPointFile!"
-echo Status2: OK >> "!BackupPointFile!"
-) else (
-echo Checking "!CSPUserData2!" >> "!BackupPointFile!"
-echo Status2: NOTFOUND >> "!BackupPointFile!"
-)
-if exist "!CSPUserData3!\" (
-echo Checking "!CSPUserData3!" >> "!BackupPointFile!"
-echo Status3: OK >> "!BackupPointFile!"
-) else (
-echo Checking "!CSPUserData3!" >> "!BackupPointFile!"
-echo Status3: NOTFOUND >> "!BackupPointFile!"
-)
-if not "!MaterialPath!"=="!MaterialPathDefault!" (
-echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
-echo Status4: 0 >> "!BackupPointFile!"
-) else (
-echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
-echo Status4: 1 >> "!BackupPointFile!"
-)
+call :create_backup_point
 echo Backing up...
 echo Do not close this window...
 echo [ACTION] Start backup >> "%logfile%"
@@ -283,7 +257,7 @@ echo No path selected. Returning to menu...
 timeout /t 2 /nobreak >nul
 goto manage_userdata
 ) else (
-call :start_backup
+call :backup_selection_menu
 call :check_backup_status
 )
 ) else (
@@ -456,4 +430,184 @@ echo Reset value >> "%logfile%"
 set "SelectedBak="
 set "SaveFile="
 set "MaterialPath="
+goto :eof
+
+
+
+::====================================================================
+:select_items_to_backup
+setlocal enabledelayedexpansion
+set "AccountSelectStatus=0"
+set "MaterialSelectStatus=0"
+set "WorkspaceSelectStatus=0"
+set "SelectAllStatus=0"
+
+:backup_selection_menu
+cls
+if !AccountSelectStatus! equ 1 (set "AccountShow=Selected") else (set "AccountShow=        ")
+if !MaterialSelectStatus! equ 1 (set "MaterialShow=Selected") else (set "MaterialShow=        ")
+if !WorkspaceSelectStatus! equ 1 (set "WorkspaceShow=Selected") else (set "WorkspaceShow=        ")
+if !SelectAllStatus! equ 1 (set "SelectAllShow=Selected") else (set "SelectAllShow=        ")
+
+echo 		Select item(s) to Backup:
+echo ==========================================================
+echo No. item		Status
+echo ==========================================================
+echo.
+echo [1] Account            !AccountShow!
+echo [2] Material           !MaterialShow!
+echo [3] Workspace          !WorkspaceShow!
+echo.
+echo ==========================================================
+echo [4] Select/Deselect All
+echo [C] Confirm
+choice /c 1234C /n /m "Select item (1-4) or press ENTER to confirm:"
+if errorlevel 5 goto start_custom_backup
+if errorlevel 4 (
+if !SelectAllStatus! equ 0 (
+set "AccountSelectStatus=1"
+set "MaterialSelectStatus=1"
+set "WorkspaceSelectStatus=1"
+set "SelectAllStatus=1"
+) else (
+set "AccountSelectStatus=0"
+set "MaterialSelectStatus=0"
+set "WorkspaceSelectStatus=0"
+set "SelectAllStatus=0"
+)
+goto backup_selection_menu
+)
+if errorlevel 3 (
+if !WorkspaceSelectStatus! equ 1 (
+set "WorkspaceSelectStatus=0"
+) else (
+set "WorkspaceSelectStatus=1"
+)
+goto backup_selection_menu
+)
+if errorlevel 2 (
+if !MaterialSelectStatus! equ 1 (
+set "MaterialSelectStatus=0"
+) else (
+set "MaterialSelectStatus=1"
+)
+goto backup_selection_menu
+)
+if errorlevel 1 (
+if !AccountSelectStatus! equ 1 (
+set "AccountSelectStatus=0"
+) else (
+set "AccountSelectStatus=1"
+)
+	goto backup_selection_menu
+)
+endlocal & (
+set "AccountSelectStatus=%AccountSelectStatus%"
+set "MaterialSelectStatus=%MaterialSelectStatus%"
+set "WorkspaceSelectStatus=%WorkspaceSelectStatus%"
+)
+
+:start_custom_backup
+cls
+call :check_program_running
+call :merge_material_data
+set "AccountFileLocation=!CSPUserData1!\CELSYS\CLIPStudioCommon\Preference\LoginInfo.sqlite"
+set "WorkspaceFileLocation=!CSPUserData2!\CLIPStudioPaint\1.5.0\Placement"
+set "MaterialFileLocation=!CSPUserData1!\CELSYS\CLIPStudioCommon\Material"
+set "BackupList="
+if "!AccountSelectStatus!"=="1" (
+if exist "!AccountFileLocation!" (
+set "BackupList=!BackupList! "!AccountFileLocation!""
+)
+)
+if "!MaterialSelectStatus!"=="1" (
+if exist "!MaterialFileLocation!\" (
+set "BackupList=!BackupList! "!MaterialFileLocation!\"""
+)
+)
+if "!WorkspaceSelectStatus!"=="1" (
+if exist "!WorkspaceFileLocation!\" (
+set "BackupList=!BackupList! "!WorkspaceFileLocation!\"""
+)
+)
+if not defined BackupList (
+echo No items selected or files not found.
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('No valid data found for backup','ClipStudio Paint Data Manager')"
+timeout /t 2 /nobreak >nul
+goto manage_userdata
+)
+call :select_location_save_backup
+if not defined SaveFile (
+echo No destination selected.
+timeout /t 2 /nobreak >nul
+goto manage_userdata
+)
+echo Creating backup file...
+call :create_backup_point
+start /wait /b "" "!ZipEXE!" a "!SaveFile!" "!BackupPointFile!" !BackupList! >nul
+if exist "!SaveFile!" (
+echo Backup completed successfully.
+echo [INFO] Custom backup completed >> "!logfile!"
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Custom backup completed','ClipStudio Paint Data Manager')"
+) else (
+echo Backup failed.
+echo [ERROR] Custom backup failed >> "!logfile!"
+powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Custom backup failed','ClipStudio Paint Data Manager')"
+)
+goto manage_userdata
+
+
+:create_backup_point
+if exist "!CSPUserData1!\" (
+echo Checking "!CSPUserData1!" >> "!BackupPointFile!"
+echo Status1: OK >> "!BackupPointFile!"
+) else (
+echo Checking "!CSPUserData1!" >> "!BackupPointFile!"
+echo Status1: NOTFOUND >> "!BackupPointFile!"
+)
+if exist "!CSPUserData2!\" (
+echo Checking "!CSPUserData2!" >> "!BackupPointFile!"
+echo Status2: OK >> "!BackupPointFile!"
+) else (
+echo Checking "!CSPUserData2!" >> "!BackupPointFile!"
+echo Status2: NOTFOUND >> "!BackupPointFile!"
+)
+if exist "!CSPUserData3!\" (
+echo Checking "!CSPUserData3!" >> "!BackupPointFile!"
+echo Status3: OK >> "!BackupPointFile!"
+) else (
+echo Checking "!CSPUserData3!" >> "!BackupPointFile!"
+echo Status3: NOTFOUND >> "!BackupPointFile!"
+)
+if not "!MaterialPath!"=="!MaterialPathDefault!" (
+echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
+echo Status4: 0 >> "!BackupPointFile!"
+) else (
+echo Checking "!MaterialPathDefault!" >> "!BackupPointFile!"
+echo Status4: 1 >> "!BackupPointFile!"
+)
+if "!AccountSelectStatus!"=="1" (
+    if exist "!AccountFileLocation!" (
+        echo AccountBackupAvailable: 1 >> "!BackupPointFile!"
+    ) else (
+        echo AccountBackupAvailable: 0 >> "!BackupPointFile!"
+    )
+)
+
+if "!MaterialSelectStatus!"=="1" (
+    if exist "!MaterialFileLocation!\" (
+        echo MaterialBackupAvailable: 1 >> "!BackupPointFile!"
+    ) else (
+        echo MaterialBackupAvailable: 0 >> "!BackupPointFile!"
+    )
+)
+
+if "!WorkspaceSelectStatus!"=="1" (
+    if exist "!WorkspaceFileLocation!\" (
+        echo WorkspaceBackupAvailable: 1 >> "!BackupPointFile!"
+    ) else (
+        echo WorkspaceBackupAvailable: 0 >> "!BackupPointFile!"
+    )
+)
+
 goto :eof
